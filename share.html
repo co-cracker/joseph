@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>책 분석 프롬프트 생성기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Pretendard", "Malgun Gothic", sans-serif;
+    background: #fafaf9;
+    color: #1c1917;
+    line-height: 1.6;
+    padding: 2rem 1rem 4rem;
+    min-height: 100vh;
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.75rem; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+  .lead { color: #57534e; margin-bottom: 2rem; font-size: 0.95rem; }
+  .lead strong { color: #1c1917; }
+  .card {
+    background: white;
+    border: 1px solid #e7e5e4;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  label {
+    display: block;
+    margin-bottom: 0.4rem;
+    margin-top: 0.75rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #292524;
+  }
+  label:first-of-type { margin-top: 0; }
+  .req { color: #ef4444; margin-left: 0.25rem; }
+  input, textarea {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #d6d3d1;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: #78716c;
+    box-shadow: 0 0 0 3px rgba(120,113,108,0.15);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  button, .btn-link {
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    border: 1px solid transparent;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-primary { background: #1c1917; color: white; }
+  .btn-primary:hover { background: #292524; }
+  .btn-secondary {
+    background: white;
+    color: #44403c;
+    border-color: #d6d3d1;
+  }
+  .btn-secondary:hover { background: #f5f5f4; }
+  .output-section { display: none; }
+  .output-section.active { display: block; }
+  h2 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+  .sub { color: #78716c; font-size: 0.875rem; margin-bottom: 1rem; }
+  .prompt-box {
+    background: #f5f5f4;
+    border: 1px solid #e7e5e4;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    max-height: 360px;
+    overflow-y: auto;
+    color: #44403c;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .help {
+    margin-top: 1rem;
+    padding: 0.875rem 1rem;
+    background: #fef9c3;
+    border: 1px solid #fde68a;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #713f12;
+    line-height: 1.7;
+  }
+  .help strong { color: #422006; }
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1c1917;
+    color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  footer {
+    text-align: center;
+    color: #a8a29e;
+    font-size: 0.8rem;
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>책 분석 프롬프트 생성기</h1>
+  <p class="lead">
+    책 제목 · 챕터 · 핵심 개념을 넣으면, 분석 방법론이 들어간 완성 프롬프트가 나와.
+    복사해서 <strong>claude.ai 무료 채팅</strong>에 붙여넣으면 끝.
+  </p>
+
+  <div class="card">
+    <label>책 제목<span class="req">*</span></label>
+    <input id="bookTitle" placeholder="예: 에니어그램">
+
+    <label>챕터<span class="req">*</span></label>
+    <input id="chapter" placeholder="예: 4번 유형 - 결핍감">
+
+    <label>핵심 개념<span class="req">*</span></label>
+    <input id="coreConcept" placeholder="예: 결핍감">
+
+    <label>추가 맥락 (선택)</label>
+    <textarea id="extraContext" rows="3"
+      placeholder="이 챕터에서 특히 주목할 부분이나 책의 흐름 메모. 비워둬도 돼."></textarea>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="generate()">프롬프트 만들기</button>
+      <button class="btn-secondary" onclick="fillSample()">샘플 채우기</button>
+    </div>
+  </div>
+
+  <div id="output" class="output-section">
+    <div class="card">
+      <h2>완성된 프롬프트</h2>
+      <p class="sub">아래 프롬프트를 복사해서 claude.ai 새 채팅에 붙여넣어.</p>
+
+      <div class="prompt-box" id="promptText"></div>
+
+      <div class="btn-row">
+        <button class="btn-primary" onclick="copyPrompt()">프롬프트 복사</button>
+        <a class="btn-link btn-secondary" href="https://gemini.google.com/app" target="_blank" rel="noopener">Gemini 열기 →</a>
+        <a class="btn-link btn-secondary" href="https://claude.ai/new" target="_blank" rel="noopener">Claude 열기 →</a>
+      </div>
+
+      <div class="help">
+        <strong>사용 순서</strong><br>
+        1. "프롬프트 복사" 클릭<br>
+        2. "Gemini 열기" 클릭 (Google 계정 로그인 — 무료, 한도 넉넉) <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;또는 "Claude 열기" (한도는 작지만 품질 살짝 우위)<br>
+        3. 채팅창에 붙여넣기 (Ctrl+V / Cmd+V) → Enter
+      </div>
+    </div>
+  </div>
+
+  <footer>비문학 책 분석 템플릿 · 0원 무료 · claude.ai</footer>
+</div>
+
+<div class="toast" id="toast">복사됨</div>
+
+<script>
+const TEMPLATE = `너는 비문학 책 분석 전문가이자, 고등학생도 이해할 수 있도록 설명하는 분석가야.
+
+[분석 대상]
+책 제목: {BOOK_TITLE}
+챕터: {CHAPTER}
+핵심 개념: {CORE_CONCEPT}{EXTRA_CONTEXT}
+
+[출력 형식 - 반드시 이 순서대로, 번호와 소제목을 그대로 사용해서 작성]
+
+① 배경지식 설명
+- 이 챕터를 이해하려면 먼저 알아야 할 개념을 설명해
+- 초등학생이 처음 들어도 이해할 수 있는 언어와 예시 사용
+- "이것은 마치 ○○과 같다" 방식의 일상 비유를 반드시 1개 이상 포함
+
+② 욕구와 행동 유형
+- 이 챕터가 건드리는 욕구 이름을 아래 [참조할 욕구 목록]에서 찾아 명시해
+- 욕구 → 행동 유형 → 구체적 방향 3단계 구조로 설명
+- 일상 갈등 장면 3개 포함
+  (각 장면: 상황 설정 → 내면에서 일어나는 반응 → 결과까지 흐름으로)
+
+③ 챕터 연결 필연성
+- 이 챕터가 이 자리에 없으면 책이 무너지는 이유를 설명해
+- 반드시 아래 3단계 구조로:
+  건드려지는 욕구 → 작동하는 행동 유형 → 다음 챕터로 이어지는 방향
+- 이 책에만 성립하는 이유를 일상 장면으로 확인해
+
+④ 세포·면역계 비유
+- 4단계 순서: 세포 역할 → 한계 → 다른 세포 → 챕터 연결
+- 전문 용어는 반드시 괄호 안에 쉬운 설명 추가 (예: "T세포 (면역 반응을 조절하는 세포)")
+
+[절대 하지 말 것]
+- "앞은 서론이고 뒤는 본론이다" 같은 일반적 설명 금지
+- 개념 이름만 쓰고 예시 없이 끝내는 것 금지
+- 어떤 책에나 붙일 수 있는 일반론 금지
+- 일상 갈등 장면 없이 이론만 쓰는 것 금지
+- 4개 파트 중 하나라도 누락하지 말 것
+
+[참조할 욕구 목록]
+아래 욕구 중에서 챕터에 해당하는 것을 골라 ② 파트의 분석에 사용해.
+
+1. 청결 욕구 - 어긋난 것을 원래 상태로 되돌리는 복원 행동
+2. 안전 욕구 - 불확실한 것을 파악한 뒤에야 움직이는 확인 행동
+3. 통제 욕구 - 원인을 찾아 상황을 다시 손에 쥐려는 추적 행동
+4. 균형 욕구 - 어긋난 인식을 해소하려는 조정 행동
+5. 효율 욕구 - 더 적합한 수단을 끌어오는 조달 행동
+6. 이해 욕구 - 원리를 파악해 더 잘 다루려는 분해 행동
+7. 회복 욕구 - 손상된 상태를 반대 방향으로 되돌리려는 역전 행동
+8. 생존 욕구 - 기존 방식이 실패하면 즉시 대안을 수용하는 전환 행동
+9. 의미 욕구 - 기술 너머의 이유를 묻는 확장 행동
+10. 소속 욕구 - 연결을 회복하려는 접근 행동
+11. 일관성 욕구 - 믿음과 행동을 맞추려는 정렬 행동
+12. 고통 회피 욕구 - 불쾌한 자극에서 즉시 멀어지려는 회피 행동
+13. 완성 욕구 - 미완성 상태를 끝내려는 마무리 행동
+14. 공정 욕구 - 불균형한 상황을 바로잡으려는 교정 행동
+15. 확인 욕구 - 불분명한 것을 명확히 하려는 검증 행동
+
+위 정보를 바탕으로 [출력 형식]대로 분석해줘.`;
+
+function generate() {
+  const bookTitle = document.getElementById('bookTitle').value.trim();
+  const chapter = document.getElementById('chapter').value.trim();
+  const coreConcept = document.getElementById('coreConcept').value.trim();
+  const extraContext = document.getElementById('extraContext').value.trim();
+
+  if (!bookTitle || !chapter || !coreConcept) {
+    alert('책 제목, 챕터, 핵심 개념을 모두 입력해줘.');
+    return;
+  }
+
+  const extraText = extraContext ? '\n추가 맥락: ' + extraContext : '';
+  const prompt = TEMPLATE
+    .replace('{BOOK_TITLE}', bookTitle)
+    .replace('{CHAPTER}', chapter)
+    .replace('{CORE_CONCEPT}', coreConcept)
+    .replace('{EXTRA_CONTEXT}', extraText);
+
+  document.getElementById('promptText').textContent = prompt;
+  document.getElementById('output').classList.add('active');
+  document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyPrompt() {
+  const text = document.getElementById('promptText').textContent;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => showToast('프롬프트 복사됨'),
+      () => fallbackCopy(text)
+    );
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('프롬프트 복사됨');
+  } catch {
+    showToast('복사 실패 — 직접 선택해서 복사해줘');
+  }
+  document.body.removeChild(ta);
+}
+
+function fillSample() {
+  document.getElementById('bookTitle').value = '에니어그램';
+  document.getElementById('chapter').value = '4번 유형 - 결핍감';
+  document.getElementById('coreConcept').value = '결핍감';
+  document.getElementById('extraContext').value = '';
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

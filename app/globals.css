@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  word-break: keep-all;
+  word-wrap: break-word;
+}
+
+body {
+  font-feature-settings: "ss01", "ss02";
+}
+
+/* Output block — preserve newlines and give text comfortable measure. */
+.analysis-output {
+  white-space: pre-wrap;
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.analysis-output strong {
+  font-weight: 700;
+}
+
+/* Subtle pulsing caret while streaming. */
+.streaming-caret::after {
+  content: "▍";
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1s steps(2, start) infinite;
+  color: #a8a29e;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
