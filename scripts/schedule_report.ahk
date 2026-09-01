@@ -430,10 +430,10 @@ BuildReport(groups, today, todayCount) {
         MsgBox("2단 설정 실패`n" e.Message, "알림")
     }
 
-    ; [ 1 ] 진행 상황 (전체)  →  [ 2 ] 미완료 항목  →  [ 3 ] 오늘 등록된 일
-    WriteAllSection(doc, sel, groups)
-    WriteIncompleteSection(doc, sel, groups)
+    ; [ 1 ] 오늘 등록된 일  →  [ 2 ] 미완료 항목  →  [ 3 ] 진행 상황 (전체)
     WriteTodaySection(doc, sel, groups, today)
+    WriteIncompleteSection(doc, sel, groups)
+    WriteAllSection(doc, sel, groups)
 
     path := OUTPUT_FOLDER "\세부항목일정_" dateFilename ".docx"
     doc.SaveAs(path, 12)
@@ -490,10 +490,10 @@ InsertGroupTable(doc, sel, headerText, items) {
 }
 
 ; ═══════════════════════════════════════════════
-; Section 1 — 진행 상황 (전체) : 미완료는 표, 완료는 텍스트
+; Section 3 — 진행 상황 (전체) : 미완료는 표, 완료는 텍스트
 ; ═══════════════════════════════════════════════
 WriteAllSection(doc, sel, groups) {
-    WriteSectionHeader(sel, "[ 1 ]  진행 상황 (전체)")
+    WriteSectionHeader(sel, "[ 3 ]  진행 상황 (전체)")
 
     incompleteList := []
     completeList := []
@@ -595,10 +595,10 @@ WriteIncompleteSection(doc, sel, groups) {
 }
 
 ; ═══════════════════════════════════════════════
-; Section 3 — 오늘 등록된 일
+; Section 1 — 오늘 등록된 일
 ; ═══════════════════════════════════════════════
 WriteTodaySection(doc, sel, groups, today) {
-    WriteSectionHeader(sel, "[ 3 ]  오늘 등록된 일")
+    WriteSectionHeader(sel, "[ 1 ]  오늘 등록된 일")
 
     todayParents := []
     for pkey, grp in groups {
